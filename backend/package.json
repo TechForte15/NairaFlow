@@ -3,18 +3,18 @@
   "private": true,
   "version": "0.0.0",
   "type": "module",
+  "main": "src/index.js",
   "scripts": {
-    "dev": "tsx watch src/index.ts",
-    "build": "tsc",
-    "start": "node dist/index.js"
+    "dev": "nodemon src/index.js",
+    "start": "node src/index.js"
   },
   "dependencies": {
-    "express": "latest"
+    "express": "latest",
+    "cors": "latest",
+    "dotenv": "latest",
+    "morgan": "latest"
   },
   "devDependencies": {
-    "@types/express": "latest",
-    "@types/node": "latest",
-    "tsx": "latest",
-    "typescript": "latest"
+    "nodemon": "latest"
   }
 }

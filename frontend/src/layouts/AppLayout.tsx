@@ -4,17 +4,19 @@ import { NavigationItem } from '../components/NavigationItem'
 type AppLayoutProps = {
   children?: ReactNode
   onLogout?: () => void
+  activePage?: 'dashboard' | 'wallet' | 'transfers' | 'transactions' | 'profile'
+  onNavigate?: (page: 'dashboard' | 'wallet' | 'transfers' | 'transactions' | 'profile') => void
 }
 
 const navigationItems = [
-  { label: 'Dashboard', href: '#dashboard' },
-  { label: 'Wallet', href: '#wallet' },
-  { label: 'Transfers', href: '#transfers' },
-  { label: 'Transactions', href: '#transactions' },
-  { label: 'Profile', href: '#profile' },
+  { label: 'Dashboard', href: '#dashboard', page: 'dashboard' as const },
+  { label: 'Wallet', href: '#wallet', page: 'wallet' as const },
+  { label: 'Transfers', href: '#transfers', page: 'transfers' as const },
+  { label: 'Transactions', href: '#transactions', page: 'transactions' as const },
+  { label: 'Profile', href: '#profile', page: 'profile' as const },
 ]
 
-export function AppLayout({ children, onLogout }: AppLayoutProps) {
+export function AppLayout({ children, onLogout, activePage, onNavigate }: AppLayoutProps) {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
 
   const closeMobileMenu = () => setIsMobileMenuOpen(false)
@@ -22,7 +24,14 @@ export function AppLayout({ children, onLogout }: AppLayoutProps) {
   return (
     <div className="app-layout">
       <header className="mobile-header">
-        <a className="brand" href="#dashboard" onClick={closeMobileMenu}>
+        <a
+          className="brand"
+          href="#dashboard"
+          onClick={() => {
+            onNavigate?.('dashboard')
+            closeMobileMenu()
+          }}
+        >
           NairaFlow
         </a>
         <button
@@ -40,22 +49,35 @@ export function AppLayout({ children, onLogout }: AppLayoutProps) {
         id="app-navigation"
         className={`app-sidebar${isMobileMenuOpen ? ' app-sidebar--open' : ''}`}
       >
-        <a className="brand" href="#dashboard" onClick={closeMobileMenu}>
+        <a
+          className="brand"
+          href="#dashboard"
+          onClick={() => {
+            onNavigate?.('dashboard')
+            closeMobileMenu()
+          }}
+        >
           NairaFlow
         </a>
 
         <nav className="sidebar-navigation" aria-label="Main navigation">
-          {navigationItems.map((item, index) => (
+          {navigationItems.map((item) => (
             <NavigationItem
               key={item.label}
               {...item}
-              isActive={index === 0}
-              onClick={closeMobileMenu}
+              isActive={item.page === activePage}
+              onClick={() => {
+                if (item.page) {
+                  onNavigate?.(item.page)
+                }
+
+                closeMobileMenu()
+              }}
             />
           ))}
         </nav>
 
-        <button className="logout-button" type="button" onClick={onLogout}>
+        <button className="logout-button" bg-color="green" text-color="white" type="button" onClick={onLogout}>
           Log out
         </button>
       </aside>

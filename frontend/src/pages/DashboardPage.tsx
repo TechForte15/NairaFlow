@@ -6,7 +6,11 @@ import { useAuth } from '../hooks/useAuth'
 import { mockDashboardService } from '../services/mockDashboardService'
 import type { DashboardData } from '../types/dashboard'
 
-export function DashboardPage() {
+type DashboardPageProps = {
+  onNavigate: (page: 'wallet' | 'transfers') => void
+}
+
+export function DashboardPage({ onNavigate }: DashboardPageProps) {
   const { user } = useAuth()
   const [dashboardData, setDashboardData] = useState<DashboardData | null>(null)
   const [error, setError] = useState('')
@@ -68,11 +72,16 @@ export function DashboardPage() {
             Welcome back, {firstName}
           </h1>
           <p className="body-text">Here is a quick overview of your wallet activity.</p>
+          {user?.accountNumber && (
+            <p className="body-text dashboard-account">
+              Account Number: <strong>{user.accountNumber}</strong>
+            </p>
+          )}
         </div>
       </div>
 
       <BalanceCard balance={dashboardData.availableBalance} />
-      <QuickActions />
+      <QuickActions onNavigate={onNavigate} />
       <RecentTransactions transactions={dashboardData.transactions} />
     </section>
   )

@@ -1,60 +1,37 @@
 import type { DashboardData } from '../types/dashboard'
+import { mockWalletService } from './mockWalletService'
+import type { WalletTransaction } from '../types/wallet'
 
 type MockDashboardOptions = {
   includeTransactions?: boolean
 }
 
-const mockDashboardData: DashboardData = {
-  availableBalance: 250000,
-  transactions: [
-    {
-      id: 'mock-transaction-1',
-      description: 'Wallet funding',
-      type: 'wallet-funding',
-      amount: 100000,
-      status: 'completed',
-      date: '2026-09-20T10:30:00.000Z',
-    },
-    {
-      id: 'mock-transaction-2',
-      description: 'Transfer to Chinedu Okafor',
-      type: 'transfer-sent',
-      amount: 18500,
-      status: 'completed',
-      date: '2026-09-19T14:15:00.000Z',
-    },
-    {
-      id: 'mock-transaction-3',
-      description: 'Transfer from Amina Bello',
-      type: 'transfer-received',
-      amount: 42500,
-      status: 'pending',
-      date: '2026-09-18T09:00:00.000Z',
-    },
-    {
-      id: 'mock-transaction-4',
-      description: 'Transfer to Kola Adeyemi',
-      type: 'transfer-sent',
-      amount: 7500,
-      status: 'failed',
-      date: '2026-09-17T16:45:00.000Z',
-    },
-  ],
-}
-
 const wait = () => new Promise((resolve) => window.setTimeout(resolve, 400))
+
+function toDashboardTransaction(transaction: WalletTransaction) {
+  return {
+    id: transaction.id,
+    description: transaction.description,
+    type: transaction.type === 'funding' ? ('wallet-funding' as const) : ('transfer-sent' as const),
+    amount: transaction.amount,
+    status: transaction.status,
+    date: transaction.date,
+  }
+}
 
 /**
  * Mock dashboard data for frontend development only.
- * Replace this function with wallet and transaction API calls when they are available.
+ * This uses the same wallet transaction state as the rest of the app.
  */
 export const mockDashboardService = {
-  async getDashboardData({ includeTransactions = true }: MockDashboardOptions = {}) {
+  async getDashboardData({ includeTransactions = true }: MockDashboardOptions = {}): Promise<DashboardData> {
     await wait()
+    const wallet = await mockWalletService.getWallet()
+    const walletTransactions = wallet.transactions.map(toDashboardTransaction)
 
     return {
-      ...mockDashboardData,
-      transactions: includeTransactions ? mockDashboardData.transactions : [],
+      availableBalance: wallet.availableBalance,
+      transactions: includeTransactions ? walletTransactions : [],
     }
   },
 }

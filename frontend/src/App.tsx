@@ -2,19 +2,41 @@ import { useState } from 'react'
 import { useAuth } from './hooks/useAuth'
 import { AppLayout } from './layouts/AppLayout'
 import { DashboardPage } from './pages/DashboardPage'
-import { LoginPage } from './pages/LoginPage'
+import { ForgotPasswordPage, LoginPage } from './pages/LoginPage'
+import { ProfilePage } from './pages/ProfilePage'
 import { RegisterPage } from './pages/RegisterPage'
+import { TransactionsPage } from './pages/TransactionsPage'
+import { TransfersPage } from './pages/TransfersPage'
+import { WalletPage } from './pages/WalletPage'
 
-type AuthScreen = 'login' | 'register'
+type AuthScreen = 'login' | 'register' | 'forgot-password'
+type AppPage = 'dashboard' | 'wallet' | 'transfers' | 'transactions' | 'profile'
 
 export function App() {
   const { isAuthenticated, logout } = useAuth()
   const [authScreen, setAuthScreen] = useState<AuthScreen>('login')
+  const [activePage, setActivePage] = useState<AppPage>('dashboard')
+
+  function handleLogout() {
+    logout()
+    setAuthScreen('login')
+    setActivePage('dashboard')
+  }
 
   if (isAuthenticated) {
     return (
-      <AppLayout onLogout={logout}>
-        <DashboardPage />
+      <AppLayout activePage={activePage} onNavigate={setActivePage} onLogout={handleLogout}>
+        {activePage === 'wallet' ? (
+          <WalletPage />
+        ) : activePage === 'transfers' ? (
+          <TransfersPage />
+        ) : activePage === 'transactions' ? (
+          <TransactionsPage />
+        ) : activePage === 'profile' ? (
+          <ProfilePage />
+        ) : (
+          <DashboardPage onNavigate={setActivePage} />
+        )}
       </AppLayout>
     )
   }
@@ -23,5 +45,14 @@ export function App() {
     return <RegisterPage onShowLogin={() => setAuthScreen('login')} />
   }
 
-  return <LoginPage onShowRegister={() => setAuthScreen('register')} />
+  if (authScreen === 'forgot-password') {
+    return <ForgotPasswordPage onBackToLogin={() => setAuthScreen('login')} />
+  }
+
+  return (
+    <LoginPage
+      onShowRegister={() => setAuthScreen('register')}
+      onShowForgotPassword={() => setAuthScreen('forgot-password')}
+    />
+  )
 }

@@ -2,6 +2,7 @@ export type User = {
   id: string
   fullName: string
   email: string
+  accountNumber: string
 }
 
 export type RegisterInput = {

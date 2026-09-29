@@ -3,6 +3,7 @@ import { useAuth } from '../hooks/useAuth'
 
 type LoginPageProps = {
   onShowRegister: () => void
+  onShowForgotPassword: () => void
 }
 
 type LoginErrors = {
@@ -12,7 +13,96 @@ type LoginErrors = {
 
 const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
-export function LoginPage({ onShowRegister }: LoginPageProps) {
+export function ForgotPasswordPage({ onBackToLogin }: { onBackToLogin: () => void }) {
+  const [email, setEmail] = useState('')
+  const [error, setError] = useState('')
+  const [successMessage, setSuccessMessage] = useState('')
+  const [isSubmitting, setIsSubmitting] = useState(false)
+
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault()
+    setError('')
+    setSuccessMessage('')
+
+    if (!email.trim()) {
+      setError('Enter your email address.')
+      return
+    }
+
+    if (!emailPattern.test(email.trim())) {
+      setError('Enter a valid email address.')
+      return
+    }
+
+    setIsSubmitting(true)
+
+    try {
+      await new Promise((resolve) => window.setTimeout(resolve, 500))
+      setSuccessMessage('If an account exists for this email, password reset instructions would be sent.')
+      setEmail('')
+    } catch {
+      setError('Unable to process your request. Please try again.')
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
+
+  return (
+    <main className="auth-page">
+      <section className="card auth-card" aria-labelledby="forgot-password-heading">
+        <div className="auth-heading">
+          <p className="brand">NairaFlow</p>
+          <h1 id="forgot-password-heading" className="heading-2">
+            Reset your password
+          </h1>
+          <p className="body-text">
+            This is a mock frontend flow for password recovery. No real reset email is sent.
+          </p>
+        </div>
+
+        <form className="auth-form" onSubmit={handleSubmit} noValidate>
+          {successMessage && (
+            <p className="message message--success" role="status">
+              {successMessage}
+            </p>
+          )}
+
+          {error && (
+            <p className="message message--error" role="alert">
+              {error}
+            </p>
+          )}
+
+          <div>
+            <label className="label" htmlFor="forgot-password-email">
+              Email address
+            </label>
+            <input
+              id="forgot-password-email"
+              className="input"
+              type="email"
+              autoComplete="email"
+              value={email}
+              onChange={(event) => setEmail(event.target.value)}
+            />
+          </div>
+
+          <button className="button" type="submit" disabled={isSubmitting}>
+            {isSubmitting ? 'Sending…' : 'Send reset instructions'}
+          </button>
+        </form>
+
+        <p className="auth-footer body-text">
+          <button className="auth-link" type="button" onClick={onBackToLogin}>
+            Back to login
+          </button>
+        </p>
+      </section>
+    </main>
+  )
+}
+
+export function LoginPage({ onShowRegister, onShowForgotPassword }: LoginPageProps) {
   const { login } = useAuth()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -118,9 +208,14 @@ export function LoginPage({ onShowRegister }: LoginPageProps) {
             )}
           </div>
 
-          <button className="button" type="submit" disabled={isSubmitting}>
-            {isSubmitting ? 'Logging in…' : 'Log in'}
-          </button>
+          <div className="auth-actions">
+            <button className="button" type="submit" disabled={isSubmitting}>
+              {isSubmitting ? 'Logging in…' : 'Log in'}
+            </button>
+            <button className="auth-link auth-link--secondary" type="button" onClick={onShowForgotPassword}>
+              Forgot Password?
+            </button>
+          </div>
         </form>
 
         <p className="auth-footer body-text">

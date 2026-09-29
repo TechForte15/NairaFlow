@@ -1,6 +1,8 @@
 import type { LoginInput, RegisterInput, User } from '../types/auth'
 
 type MockStoredUser = User & {
+  firstName: string
+  lastName: string
   password: string
 }
 
@@ -8,6 +10,50 @@ const USERS_STORAGE_KEY = 'nairaflow_mock_users'
 const CURRENT_USER_STORAGE_KEY = 'nairaflow_mock_current_user'
 
 const wait = () => new Promise((resolve) => window.setTimeout(resolve, 500))
+
+function makeAccountNumber() {
+  return String(Math.floor(1000000000 + Math.random() * 9000000000))
+}
+
+function generateUniqueAccountNumber(users: MockStoredUser[]) {
+  let candidate = makeAccountNumber()
+
+  while (users.some((user) => user.accountNumber === candidate)) {
+    candidate = makeAccountNumber()
+  }
+
+  return candidate
+}
+
+function normaliseAccountNumber(accountNumber?: string) {
+  const value = String(accountNumber ?? '').trim()
+  return /^\d{6,15}$/.test(value) ? value : ''
+}
+
+function ensureAccountNumbers(users: MockStoredUser[]): MockStoredUser[] {
+  let updatedUsers = [...users]
+  let changed = false
+
+  updatedUsers = updatedUsers.map((user) => {
+    const cleanedAccountNumber = normaliseAccountNumber(user.accountNumber)
+
+    if (cleanedAccountNumber) {
+      return user
+    }
+
+    changed = true
+    return {
+      ...user,
+      accountNumber: generateUniqueAccountNumber(updatedUsers),
+    }
+  })
+
+  if (changed) {
+    saveUsers(updatedUsers)
+  }
+
+  return updatedUsers
+}
 
 function getStoredUsers(): MockStoredUser[] {
   const savedUsers = localStorage.getItem(USERS_STORAGE_KEY)
@@ -17,7 +63,8 @@ function getStoredUsers(): MockStoredUser[] {
   }
 
   try {
-    return JSON.parse(savedUsers) as MockStoredUser[]
+    const users = JSON.parse(savedUsers) as MockStoredUser[]
+    return ensureAccountNumbers(users)
   } catch {
     return []
   }
@@ -27,7 +74,17 @@ function saveUsers(users: MockStoredUser[]) {
   localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(users))
 }
 
-function toUser({ password: _password, ...user }: MockStoredUser): User {
+function splitFullName(fullName: string) {
+  const trimmedName = fullName.trim()
+  const [firstName, ...remaining] = trimmedName.split(/\s+/)
+
+  return {
+    firstName: firstName ?? '',
+    lastName: remaining.join(' '),
+  }
+}
+
+function toUser({ password: _password, firstName: _firstName, lastName: _lastName, ...user }: MockStoredUser): User {
   return user
 }
 
@@ -51,10 +108,16 @@ export const mockAuthService = {
       throw new Error('An account with this email already exists.')
     }
 
+    const { firstName, lastName } = splitFullName(input.fullName)
+    const fullName = `${firstName} ${lastName}`.trim()
+
     const storedUser: MockStoredUser = {
       id: `mock-user-${Date.now()}`,
-      fullName: input.fullName.trim(),
+      fullName,
       email,
+      accountNumber: generateUniqueAccountNumber(users),
+      firstName,
+      lastName,
       password: input.password,
     }
 
@@ -82,6 +145,45 @@ export const mockAuthService = {
     localStorage.setItem(CURRENT_USER_STORAGE_KEY, JSON.stringify(currentUser))
 
     return currentUser
+  },
+
+  async updateProfile(input: { firstName: string; lastName: string }): Promise<User> {
+    const currentUser = mockAuthService.getCurrentUser()
+
+    if (!currentUser) {
+      throw new Error('You must be signed in to update your profile.')
+    }
+
+    const firstName = input.firstName.trim()
+    const lastName = input.lastName.trim()
+
+    if (!firstName || !lastName) {
+      throw new Error('First name and last name are required.')
+    }
+
+    const fullName = `${firstName} ${lastName}`.trim()
+
+    const users = getStoredUsers().map((storedUser) =>
+      storedUser.id === currentUser.id
+        ? {
+            ...storedUser,
+            firstName,
+            lastName,
+            fullName,
+          }
+        : storedUser,
+    )
+
+    saveUsers(users)
+
+    const updatedUser: User = {
+      ...currentUser,
+      fullName,
+    }
+
+    localStorage.setItem(CURRENT_USER_STORAGE_KEY, JSON.stringify(updatedUser))
+
+    return updatedUser
   },
 
   getCurrentUser(): User | null {
